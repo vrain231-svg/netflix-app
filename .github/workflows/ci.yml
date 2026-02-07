@@ -1,10 +1,25 @@
+
 name: CI & CD Pipeline
 
 on:
   push:
     branches: [ main ]
+    paths:
+      - 'gmail-viewer-app/**'
+      - 'mail-to-telegram/**'
+      - 'docker/**'
+      - '.github/workflows/ci.yml'
   pull_request:
     branches: [ main ]
+    paths:
+      - 'gmail-viewer-app/**'
+      - 'mail-to-telegram/**'
+      - 'docker/**'
+      - '.github/workflows/ci.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   IMAGE: longtb11/mail-to-telegram
@@ -13,17 +28,39 @@ env:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # shallow clone for speed
+
+      - name: Cache Node.js dependencies
+        uses: actions/cache@v4
+        with:
+          path: gmail-viewer-app/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('gmail-viewer-app/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Login Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          
-      - name: Build with env
+
+      - name: Build with env (with cache)
         env:
           MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
@@ -38,7 +75,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        run: docker compose build
+        run: |
+          docker compose build \
+            --build-arg BUILDKIT_INLINE_CACHE=1
 
       - name: Tag images
         env:
@@ -54,11 +93,11 @@ jobs:
           docker push longtb11/gmail-viewer:$TAG
           docker push longtb11/mail-to-telegram:$TAG
 
-  cd:
+
+  deploy_mail_to_telegram:
     needs: ci
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
-
     steps:
       - name: Deploy mail-to-telegram
         uses: appleboy/ssh-action@v1.0.0
@@ -118,7 +157,11 @@ jobs:
               -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
               longtb11/mail-to-telegram:$TAG
 
-              
+  deploy_gmail_viewer:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
       - name: Deploy gmail-viewer to server
         uses: appleboy/ssh-action@v1.0.0
         env:
