@@ -88,6 +88,8 @@ jobs:
 
     steps:
       - name: Deploy mail-to-telegram to server
+        env:
+          TAG: ${{ github.sha }}
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -102,6 +104,8 @@ jobs:
               longtb11/mail-to-telegram:$TAG
               
       - name: Deploy gmail-viewer to server
+        env:
+          TAG: ${{ github.sha }}
         uses: appleboy/ssh-action@v1.0.0
         with:
           host: ${{ secrets.SERVER_HOST }}
