@@ -9,16 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: gmail_db
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,12 +39,44 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          
       - name: Run Python tests
         working-directory: mail-to-telegram
         run: |
           if [ -f tests ]; then pytest tests; fi
 
-      - name: Test MySQL connection (optional)
+      - name: Build with env
+        env:
+          MYSQL_HOST=${{ secrets.MYSQL_HOST }}
+          MYSQL_USER=${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+          GMAIL_USER=${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD=${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_TOKEN=${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID=${{ secrets.CHAT_ID }}
+          ALLOWED_SENDER=${{ secrets.ALLOWED_SENDER }}
+          SLEEPTIME=${{ secrets.SLEEPTIME }}
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}
+        run: docker compose build
+
+      - name: Tag images
+        env:
+          TAG: ${{ github.sha }}
         run: |
-          docker exec $(docker ps -qf ancestor=mysql:8.0) mysql -uroot -proot -e 'SHOW DATABASES;'
-        continue-on-error: true
+          docker tag longtb11/gmail-viewer longtb11/gmail-viewer:$TAG
+          docker tag longtb11/mail-to-telegram longtb11/mail-to-telegram:$TAG
+
+      - name: Push images
+        env:
+          TAG: ${{ github.sha }}
+        run: |
+          docker push longtb11/gmail-viewer:$TAG
+          docker push longtb11/mail-to-telegram:$TAG

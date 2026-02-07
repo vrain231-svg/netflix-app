@@ -2,6 +2,7 @@ version: '3.8'
 services:
   # Gmail Viewer App (Next.js)
   gmail-viewer:
+    image: longtb11/gmail-viewer
     build:
       context: ./gmail-viewer-app
       dockerfile: Dockerfile
@@ -10,10 +11,10 @@ services:
     ports:
       - "80:80"
     environment:
-      - MYSQL_HOST={{ secrets.MYSQL_HOST }}
-      - MYSQL_USER={{ secrets.MYSQL_USER }}
-      - MYSQL_PASSWORD={{ secrets.MYSQL_PASSWORD }}
-      - MYSQL_DATABASE={{ secrets.MYSQL_DATABASE }}
+      - MYSQL_HOST=${MYSQL_HOST:-}
+      - MYSQL_USER=${MYSQL_USER:-}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-}
       - MYSQL_PORT=3306
       - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
     # depends_on:
@@ -28,28 +29,29 @@ services:
 
   # Mail to Telegram Service (Python)
   mail-to-telegram:
+    image: longtb11/mail-to-telegram
     build:
       context: ./mail-to-telegram
       dockerfile: Dockerfile
     container_name: netflix-mail-telegram
     restart: unless-stopped
     environment:
-      - MYSQL_HOST={{ secrets.MYSQL_HOST }}
-      - MYSQL_USER={{ secrets.MYSQL_USER }}
-      - MYSQL_PASSWORD={{ secrets.MYSQL_PASSWORD }}
-      - MYSQL_DATABASE={{ secrets.MYSQL_DATABASE }}
+      - MYSQL_HOST=${MYSQL_HOST:-}
+      - MYSQL_USER=${MYSQL_USER:-}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-}
       - MYSQL_PORT=3306
       - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
       # Add your Telegram and other environment variables here
-      - GMAIL_USER={{ secrets.GMAIL_USER }}
-      - GMAIL_APP_PASSWORD={{ secrets.GMAIL_APP_PASSWORD }}
-      - TELEGRAM_TOKEN={{ secrets.TELEGRAM_TOKEN }}
-      - CHAT_ID={{ secrets.CHAT_ID }}
-      - ALLOWED_SENDER={{ secrets.ALLOWED_SENDER }}
-      - SLEEPTIME={{ secrets.SLEEPTIME }}
-      - AWS_ACCESS_KEY_ID={{ secrets.AWS_ACCESS_KEY_ID }}
-      - AWS_SECRET_ACCESS_KEY={{ secrets.AWS_SECRET_ACCESS_KEY }}
-      - AWS_DEFAULT_REGION={{ secrets.AWS_DEFAULT_REGION }}
+      - GMAIL_USER=${GMAIL_USER:-}
+      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD:-}
+      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN:-}
+      - CHAT_ID=${CHAT_ID:-}
+      - ALLOWED_SENDER=${ALLOWED_SENDER:-}
+      - SLEEPTIME=${SLEEPTIME:-60}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-}
     # depends_on:
     #   mysql:
     #     condition: service_healthy
