@@ -93,9 +93,29 @@ jobs:
           docker push longtb11/gmail-viewer:$TAG
           docker push longtb11/mail-to-telegram:$TAG
 
+  clean-up:
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      steps:
+      - name: Stop specific containers
+        run: |
+          docker stop gmail-viewer || true
+          docker stop mail-to-telegram || true
+
+      - name: Remove stopped containers (optional)
+        run: |
+          docker rm gmail-viewer || true
+          docker rm mail-to-telegram || true
+
+      - name: Docker prune
+        uses: docker/prune-action@v2.0.0
+        with:
+          flags: "--all --volumes"
 
   deploy_mail_to_telegram:
-    needs: ci
+    needs: clean-up
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -137,9 +157,6 @@ jobs:
             AWS_DEFAULT_REGION
           script: |
             docker pull longtb11/mail-to-telegram:$TAG
-            docker stop mail-to-telegram || true
-            docker rm mail-to-telegram || true
-            docker image prune -a -f
             docker run -d \
               --name mail-to-telegram \
               -e MYSQL_HOST="$MYSQL_HOST" \
@@ -158,7 +175,7 @@ jobs:
               longtb11/mail-to-telegram:$TAG
 
   deploy_gmail_viewer:
-    needs: ci
+    needs: clean-up
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -182,9 +199,6 @@ jobs:
             MYSQL_DATABASE
           script: |
             docker pull longtb11/gmail-viewer:$TAG
-            docker stop gmail-viewer || true
-            docker rm gmail-viewer || true
-            docker image prune -a -f
             docker run -d \
               --name gmail-viewer \
               -e MYSQL_HOST="$MYSQL_HOST" \
