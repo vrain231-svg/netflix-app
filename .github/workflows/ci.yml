@@ -98,20 +98,23 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Stop specific containers
-        run: |
-          docker stop gmail-viewer || true
-          docker stop mail-to-telegram || true
-
-      - name: Remove stopped containers (optional)
-        run: |
-          docker rm gmail-viewer || true
-          docker rm mail-to-telegram || true
-
-      - name: Docker prune
-        uses: docker/prune-action@v2.0.0
+      - name: Cleanup Docker on server
+        uses: appleboy/ssh-action@v1.0.0
         with:
-          flags: "--all --volumes"
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            echo "Stopping containers..."
+            docker stop gmail-viewer || true
+            docker stop mail-to-telegram || true
+
+            echo "Removing containers..."
+            docker rm gmail-viewer || true
+            docker rm mail-to-telegram || true
+
+            echo "Docker prune..."
+            docker system prune -af --volumes
 
   deploy_mail_to_telegram:
     needs: clean-up
