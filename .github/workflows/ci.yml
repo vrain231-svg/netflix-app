@@ -109,15 +109,36 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: ALL
+          envs: >
+            TAG,
+            MYSQL_HOST,
+            MYSQL_USER,
+            MYSQL_PASSWORD,
+            MYSQL_DATABASE,
+            GMAIL_USER,
+            GMAIL_APP_PASSWORD,
+            TELEGRAM_TOKEN,
+            CHAT_ID,
+            ALLOWED_SENDER,
+            SLEEPTIME
           script: |
             docker pull longtb11/mail-to-telegram:$TAG
             docker stop mail-to-telegram || true
             docker rm mail-to-telegram || true
             docker run -d \
               --name mail-to-telegram \
-              $(env | grep -E 'MYSQL_|GMAIL_|TELEGRAM_|CHAT_ID|ALLOWED_SENDER|SLEEPTIME' | sed 's/^/-e /') \
+              -e MYSQL_HOST="$MYSQL_HOST" \
+              -e MYSQL_USER="$MYSQL_USER" \
+              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+              -e MYSQL_DATABASE="$MYSQL_DATABASE" \
+              -e GMAIL_USER="$GMAIL_USER" \
+              -e GMAIL_APP_PASSWORD="$GMAIL_APP_PASSWORD" \
+              -e TELEGRAM_TOKEN="$TELEGRAM_TOKEN" \
+              -e CHAT_ID="$CHAT_ID" \
+              -e ALLOWED_SENDER="$ALLOWED_SENDER" \
+              -e SLEEPTIME="$SLEEPTIME" \
               longtb11/mail-to-telegram:$TAG
+
               
       - name: Deploy gmail-viewer to server
         uses: appleboy/ssh-action@v1.0.0
@@ -131,13 +152,21 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          envs: ALL
+          envs: >
+            TAG,
+            MYSQL_HOST,
+            MYSQL_USER,
+            MYSQL_PASSWORD,
+            MYSQL_DATABASE
           script: |
             docker pull longtb11/gmail-viewer:$TAG
             docker stop gmail-viewer || true
             docker rm gmail-viewer || true
             docker run -d \
               --name gmail-viewer \
-              $(env | grep -E 'MYSQL_|GMAIL_|TELEGRAM_|CHAT_ID|ALLOWED_SENDER|SLEEPTIME' | sed 's/^/-e /') \
+              -e MYSQL_HOST="$MYSQL_HOST" \
+              -e MYSQL_USER="$MYSQL_USER" \
+              -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
+              -e MYSQL_DATABASE="$MYSQL_DATABASE" \
               -p 80:80 \
               longtb11/gmail-viewer:$TAG
