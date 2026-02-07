@@ -131,7 +131,7 @@ jobs:
             docker pull longtb11/mail-to-telegram:$TAG
             docker stop mail-to-telegram || true
             docker rm mail-to-telegram || true
-            docker image prune -f
+            docker image prune -a -f
             docker run -d \
               --name mail-to-telegram \
               -e MYSQL_HOST="$MYSQL_HOST" \
@@ -172,7 +172,7 @@ jobs:
             docker pull longtb11/gmail-viewer:$TAG
             docker stop gmail-viewer || true
             docker rm gmail-viewer || true
-            docker image prune -f
+            docker image prune -a -f
             docker run -d \
               --name gmail-viewer \
               -e MYSQL_HOST="$MYSQL_HOST" \
