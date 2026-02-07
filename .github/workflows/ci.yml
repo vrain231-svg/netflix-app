@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+env:
+  IMAGE: longtb11/mail-to-telegram
+  TAG: ${{ github.sha }}
+
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -94,12 +98,12 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            docker pull longtb11/mail-to-telegram:latest
+            docker pull longtb11/mail-to-telegram:$TAG
             docker stop mail-to-telegram || true
             docker rm mail-to-telegram || true
             docker run -d \
               --name mail-to-telegram \
-              longtb11/mail-to-telegram:latest
+              longtb11/mail-to-telegram:$TAG
               
       - name: Deploy gmail-viewer to server
         uses: appleboy/ssh-action@v1.0.0
@@ -108,10 +112,10 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
-            docker pull longtb11/gmail-viewer:latest
+            docker pull longtb11/gmail-viewer:$TAG
             docker stop gmail-viewer || true
             docker rm gmail-viewer || true
             docker run -d \
               --name gmail-viewer \
               -p 80:80 \
-              longtb11/gmail-viewer:latest
+              longtb11/gmail-viewer:$TAG
