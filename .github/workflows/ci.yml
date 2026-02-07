@@ -98,7 +98,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-      steps:
       - name: Stop specific containers
         run: |
           docker stop gmail-viewer || true
