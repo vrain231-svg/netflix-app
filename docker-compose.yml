@@ -1,0 +1,71 @@
+version: '3.8'
+services:
+  # Gmail Viewer App (Next.js)
+  gmail-viewer:
+    build:
+      context: ./gmail-viewer-app
+      dockerfile: Dockerfile
+    container_name: netflix-gmail-viewer
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      - MYSQL_HOST={{ secrets.MYSQL_HOST }}
+      - MYSQL_USER={{ secrets.MYSQL_USER }}
+      - MYSQL_PASSWORD={{ secrets.MYSQL_PASSWORD }}
+      - MYSQL_DATABASE={{ secrets.MYSQL_DATABASE }}
+      - MYSQL_PORT=3306
+      - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+    # depends_on:
+    #   mysql:
+    #     condition: service_healthy
+    networks:
+      - netflix-network
+    volumes:
+      - ./gmail-viewer-app:/app
+      - /app/node_modules
+      - /app/.next
+
+  # Mail to Telegram Service (Python)
+  mail-to-telegram:
+    build:
+      context: ./mail-to-telegram
+      dockerfile: Dockerfile
+    container_name: netflix-mail-telegram
+    restart: unless-stopped
+    environment:
+      - MYSQL_HOST={{ secrets.MYSQL_HOST }}
+      - MYSQL_USER={{ secrets.MYSQL_USER }}
+      - MYSQL_PASSWORD={{ secrets.MYSQL_PASSWORD }}
+      - MYSQL_DATABASE={{ secrets.MYSQL_DATABASE }}
+      - MYSQL_PORT=3306
+      - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+      # Add your Telegram and other environment variables here
+      - GMAIL_USER={{ secrets.GMAIL_USER }}
+      - GMAIL_APP_PASSWORD={{ secrets.GMAIL_APP_PASSWORD }}
+      - TELEGRAM_TOKEN={{ secrets.TELEGRAM_TOKEN }}
+      - CHAT_ID={{ secrets.CHAT_ID }}
+      - ALLOWED_SENDER={{ secrets.ALLOWED_SENDER }}
+      - SLEEPTIME={{ secrets.SLEEPTIME }}
+      - AWS_ACCESS_KEY_ID={{ secrets.AWS_ACCESS_KEY_ID }}
+      - AWS_SECRET_ACCESS_KEY={{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - AWS_DEFAULT_REGION={{ secrets.AWS_DEFAULT_REGION }}
+    # depends_on:
+    #   mysql:
+    #     condition: service_healthy
+    networks:
+      - netflix-network
+    volumes:
+      - ./mail-to-telegram:/app
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    mem_limit: 256m
+    cpus: 0.5
+
+# volumes:
+#   mysql_data:
+
+networks:
+  netflix-network:
+    driver: bridge

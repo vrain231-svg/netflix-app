@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gmail_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent" --health-interval=10s --health-timeout=5s --health-retries=3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies (Next.js app)
+        working-directory: gmail-viewer-app
+        run: npm ci
+
+      - name: Lint and build (Next.js app)
+        working-directory: gmail-viewer-app
+        run: |
+          npm run lint
+          npm run build
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        working-directory: mail-to-telegram
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Python tests
+        working-directory: mail-to-telegram
+        run: |
+          if [ -f tests ]; then pytest tests; fi
+
+      - name: Test MySQL connection (optional)
+        run: |
+          docker exec $(docker ps -qf ancestor=mysql:8.0) mysql -uroot -proot -e 'SHOW DATABASES;'
+        continue-on-error: true
