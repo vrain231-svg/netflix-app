@@ -93,7 +93,7 @@ export default function EmailList({
                 {email.fromName}
               </p>
               <div className="flex items-center space-x-2 flex-shrink-0">
-                <span className="text-xs text-muted-foreground">{formatDate(email.date)}</span>
+                <span className="text-xs text-muted-foreground">{formatDate(email.datetime)}</span>
               </div>
             </div>
             

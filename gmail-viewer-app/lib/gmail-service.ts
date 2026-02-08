@@ -19,6 +19,7 @@ export function parseEmailListItems(messages: EmailMessage[]): EmailListItem[] {
       subject: subjectHeader || "(no subject)",
       from: fromValue,
       fromName,
+      datetime: dateHeader,
       date: format(new Date(dateHeader), "MMMM dd yyyy, h:mm a"),
       snippet: message.body_snippet || "",
       isRead: true

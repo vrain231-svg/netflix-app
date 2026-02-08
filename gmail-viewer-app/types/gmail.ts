@@ -44,6 +44,7 @@ export interface EmailListItem {
   from: string;
   fromName: string;
   date: string;
+  datetime: string;
   snippet: string;
   isRead: boolean;
 }

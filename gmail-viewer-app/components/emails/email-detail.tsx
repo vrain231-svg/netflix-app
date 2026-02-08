@@ -109,7 +109,7 @@ export default function EmailDetailView({
                 <span className="text-muted-foreground ml-2 text-sm">&lt;{email.from.split('<')[1]?.replace('>', '') || email.from}&gt;</span>
               </div>
               <span className="text-muted-foreground text-sm">
-                {formatFullDate(email.date)}
+                {formatFullDate(email.datetime)}
               </span>
             </div>
           </div>
