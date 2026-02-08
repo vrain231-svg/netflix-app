@@ -1,5 +1,19 @@
 version: '3.8'
 services:
+  websocket:
+    image: longtb11/gmail-websocket
+    build:
+      context: ./websocket
+      dockerfile: Dockerfile
+    container_name: netflix-gmail-websocket
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    networks:
+      - netflix-network
+    volumes:
+      - ./websocket:/app
+
   # Gmail Viewer App (Next.js)
   gmail-viewer:
     image: longtb11/gmail-viewer

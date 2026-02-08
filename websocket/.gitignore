@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env
+npm-debug.log
+.DS_Store
+*.log
+*.tsbuildinfo
+coverage/
+# Ignore build output
+build/
+# Ignore Docker artifacts
+docker/
+# Ignore local files
+local/

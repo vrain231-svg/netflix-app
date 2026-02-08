@@ -85,6 +85,7 @@ jobs:
         run: |
           docker tag longtb11/gmail-viewer longtb11/gmail-viewer:$TAG
           docker tag longtb11/mail-to-telegram longtb11/mail-to-telegram:$TAG
+          docker tag longtb11/websocket longtb11/websocket:$TAG
 
       - name: Push images
         env:
@@ -92,7 +93,7 @@ jobs:
         run: |
           docker push longtb11/gmail-viewer:$TAG
           docker push longtb11/mail-to-telegram:$TAG
-
+          docker push longtb11/websocket:$TAG
   clean-up:
     needs: ci
     runs-on: ubuntu-latest
@@ -108,13 +109,37 @@ jobs:
             echo "Stopping containers..."
             docker stop gmail-viewer || true
             docker stop mail-to-telegram || true
+            docker stop websocket || true
 
             echo "Removing containers..."
             docker rm gmail-viewer || true
             docker rm mail-to-telegram || true
+            docker rm websocket || true
 
             echo "Docker prune..."
             docker system prune -af --volumes
+
+  deploy_websocket:
+    needs: clean-up
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy websocket
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          TAG: ${{ github.sha }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          envs: >
+            TAG
+          script: |
+            docker pull longtb11/websocket:$TAG
+            docker run -d \
+              --name websocket \
+              -p 3001:3001 \
+              longtb11/websocket:$TAG
 
   deploy_mail_to_telegram:
     needs: clean-up

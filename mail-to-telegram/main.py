@@ -14,6 +14,8 @@ from log_util import get_logger
 from email_type import EmailType
 from ttl_int_array import TTLIntArray
 from mysql_util import save_email_to_db
+import websocket
+import json
 
 # Load variables from .env into environment
 load_dotenv()
@@ -155,6 +157,20 @@ def send_to_telegram(subject, body):
     except Exception as e:
         logger.error(f"Error sending to Telegram: {e}")
         return False
+    
+def send_ws_message():
+    try:
+        ws = websocket.create_connection("ws://localhost:3001")
+
+        event = {
+            "type": "DATA_UPDATED",
+            "source": "python-sync"
+        }
+
+        ws.send(json.dumps(event))
+        ws.close()
+    except Exception as e:
+        logger.error(f"Error sending WebSocket message: {e}")
 
 def monitor_emails():
     while True:
@@ -172,6 +188,7 @@ def monitor_emails():
                         if body:
                             send_to_telegram(email_data['subject'], body)
                             save_email_to_db(email_data)
+                            send_ws_message()
                 
                 time.sleep(sleep_time)        
         except Exception as e:
