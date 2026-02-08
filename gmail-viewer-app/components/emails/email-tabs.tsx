@@ -14,6 +14,7 @@ export default function EmailTabs() {
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
   const [selectedEmail, setSelectedEmail] = useState<EmailDetail | null>(null)
   const [isLoadingEmailDetail, setIsLoadingEmailDetail] = useState(false)
+  const host = process.env.NEXT_PUBLIC_SERVER_HOST || "localhost"
 
   // Use useRealtimeData hook for emails
   const {
@@ -27,7 +28,7 @@ export default function EmailTabs() {
       if (!res.ok) throw new Error("Failed to fetch emails")
       return res.json()
     },
-    wsUrl: "ws://localhost:3001",
+    wsUrl: `ws://${host}:3001`,
     shouldReload: (msg) => msg?.type === "DATA_UPDATED"
   })
 
