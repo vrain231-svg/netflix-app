@@ -119,7 +119,7 @@ export default function EmailDetailView({
         
         <Separator className="my-3 sm:my-4" />
         
-        <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words">
+        <div className="prose prose-xs sm:prose-sm dark:prose-invert max-w-none break-words !text-xs sm:!text-sm !leading-tight sm:!leading-snug [&_*]:!my-1">
           {parse(extractBodyContent(email.body))}
         </div>
       </div>
