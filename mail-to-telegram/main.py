@@ -14,8 +14,8 @@ from log_util import get_logger
 from email_type import EmailType
 from ttl_int_array import TTLIntArray
 from mysql_util import save_email_to_db
-import websocket
 import json
+from websocket import create_connection
 
 # Load variables from .env into environment
 load_dotenv()
@@ -27,6 +27,7 @@ sleep_time = int(os.getenv("SLEEPTIME"))
 allowed_sender = ast.literal_eval(os.getenv("ALLOWED_SENDER", "[]"))
 tele_url = f'https://api.telegram.org/bot{tele_token}/sendMessage'
 logger = get_logger()
+host = os.getenv("SERVER_HOST", "localhost")
 
 def build_search_criteria():
     today = datetime.today().strftime("%d-%b-%Y")
@@ -160,13 +161,13 @@ def send_to_telegram(subject, body):
     
 def send_ws_message():
     try:
-        ws = websocket.create_connection("ws://localhost:3001")
+        ws = create_connection(f"ws://{host}:3001")
 
         event = {
             "type": "DATA_UPDATED",
             "source": "python-sync"
         }
-
+        logger.info(f"Pushing WebSocket message")
         ws.send(json.dumps(event))
         ws.close()
     except Exception as e:

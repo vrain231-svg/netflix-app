@@ -3,4 +3,4 @@ requests
 boto3 
 watchtower
 mysql-connector-python
-websocket
+websocket-client
