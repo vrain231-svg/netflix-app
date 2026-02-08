@@ -9,7 +9,7 @@ import EmailDetailView from "./email-detail"
 import { Briefcase, Inbox, MailWarning, MessageSquare, ShoppingCart } from "lucide-react"
 
 export default function EmailTabs() {
-  const [selectedTab, setSelectedTab] = useState<string>("primary")
+  const [selectedTab, setSelectedTab] = useState("primary")
   const [filteredEmails, setFilteredEmails] = useState<EmailListItem[]>([])
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null)
   const [selectedEmail, setSelectedEmail] = useState<EmailDetail | null>(null)
@@ -23,42 +23,44 @@ export default function EmailTabs() {
     reload: reloadEmails
   } = useRealtimeData<EmailListItem[]>({
     fetch: async () => {
-      const response = await fetch('/api/emails')
-      if (!response.ok) throw new Error('Failed to fetch emails')
-      return await response.json()
+      const res = await fetch("/api/emails")
+      if (!res.ok) throw new Error("Failed to fetch emails")
+      return res.json()
     },
-    wsUrl: "ws://localhost:3001", 
+    wsUrl: "ws://localhost:3001",
     shouldReload: (msg) => msg?.type === "DATA_UPDATED"
   })
 
   // Filter emails based on selected tab
   useEffect(() => {
-    setFilteredEmails(emails || [])
+    setFilteredEmails(emails ?? [])
   }, [emails, selectedTab])
 
   // Fetch email detail when selected
   const handleEmailSelect = useCallback(async (emailId: string) => {
     if (emailId === selectedEmailId) return
+
     setSelectedEmailId(emailId)
     setIsLoadingEmailDetail(true)
+
     try {
-      const response = await fetch(`/api/emails/${emailId}`)
-      if (!response.ok) throw new Error('Failed to fetch email details')
-      const data = await response.json()
+      const res = await fetch(`/api/emails/${emailId}`)
+      if (!res.ok) throw new Error("Failed to fetch email detail")
+      const data = await res.json()
       setSelectedEmail(data)
-    } catch (error) {
-      console.error('Error fetching email details:', error)
+    } catch (e) {
+      console.error(e)
       setSelectedEmail(null)
     } finally {
       setIsLoadingEmailDetail(false)
     }
   }, [selectedEmailId])
 
-  // Handle back button from detail view
   const handleBack = useCallback(() => {
     setSelectedEmailId(null)
     setSelectedEmail(null)
   }, [])
+
 
   return (
     <Tabs defaultValue="primary" value={selectedTab} onValueChange={setSelectedTab} className="w-full">
@@ -94,8 +96,6 @@ export default function EmailTabs() {
                 selectedEmailId={selectedEmailId}
                 onEmailSelect={handleEmailSelect}
                 isLoading={isLoadingEmails} 
-                error={emailsError}
-                reload={reloadEmails}
               />
             </TabsContent>
             <TabsContent value="social" className="mt-0">
@@ -104,8 +104,6 @@ export default function EmailTabs() {
                 selectedEmailId={selectedEmailId}
                 onEmailSelect={handleEmailSelect}
                 isLoading={isLoadingEmails} 
-                error={emailsError}
-                reload={reloadEmails}
               />
             </TabsContent>
             <TabsContent value="promotions" className="mt-0">
@@ -114,8 +112,6 @@ export default function EmailTabs() {
                 selectedEmailId={selectedEmailId}
                 onEmailSelect={handleEmailSelect}
                 isLoading={isLoadingEmails} 
-                error={emailsError}
-                reload={reloadEmails}
               />
             </TabsContent>
             <TabsContent value="updates" className="mt-0">
@@ -124,8 +120,6 @@ export default function EmailTabs() {
                 selectedEmailId={selectedEmailId}
                 onEmailSelect={handleEmailSelect}
                 isLoading={isLoadingEmails} 
-                error={emailsError}
-                reload={reloadEmails}
               />
             </TabsContent>
             <TabsContent value="forums" className="mt-0">
@@ -134,8 +128,6 @@ export default function EmailTabs() {
                 selectedEmailId={selectedEmailId}
                 onEmailSelect={handleEmailSelect}
                 isLoading={isLoadingEmails} 
-                error={emailsError}
-                reload={reloadEmails}
               />
             </TabsContent>
           </div>

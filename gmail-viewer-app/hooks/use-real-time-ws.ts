@@ -10,70 +10,51 @@ type UseRealtimeDataOptions<T> = {
   shouldReload?: (msg: any) => boolean
 }
 
-export function useRealtimeData<T>({
-  fetch,
-  wsUrl,
-  shouldReload
-}: UseRealtimeDataOptions<T>) {
+// hooks/use-real-time-ws.ts
+export function useRealtimeData<T>(params: {
+  fetch: () => Promise<T>
+  wsUrl?: string
+  shouldReload?: (msg: any) => boolean
+}) {
+  const { fetch, wsUrl, shouldReload } = params
 
   const [data, setData] = useState<T | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<unknown>(null)
+  const [error, setError] = useState<Error | null>(null)
 
-  /**
-   * 1️⃣ Centralized reload logic
-   */
-  const reload = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       setIsLoading(true)
+      setError(null)
       const result = await fetch()
       setData(result)
-    } catch (err) {
-      setError(err)
+    } catch (e) {
+      setError(e as Error)
     } finally {
       setIsLoading(false)
     }
   }, [fetch])
 
-  /**
-   * 2️⃣ Initial load
-   */
+  // initial fetch
   useEffect(() => {
-    reload()
-  }, [reload])
+    load()
+  }, [load])
 
-  /**
-   * 3️⃣ WebSocket trigger
-   */
-  const wsRef = useRef<WebSocket | null>(null)
-
+  // websocket
   useEffect(() => {
+    if (!wsUrl) return
+
     const ws = new WebSocket(wsUrl)
-    wsRef.current = ws
 
-    ws.onmessage = (e) => {
-      let msg
-      try {
-        msg = JSON.parse(e.data)
-      } catch {
-        return
-      }
-
-      const should =
-        shouldReload?.(msg) ?? true
-
-      if (should) {
-        reload()
+    ws.onmessage = (event) => {
+      const msg = JSON.parse(event.data)
+      if (!shouldReload || shouldReload(msg)) {
+        load()
       }
     }
 
     return () => ws.close()
-  }, [wsUrl, reload, shouldReload])
+  }, [wsUrl, shouldReload, load])
 
-  return {
-    data,
-    isLoading,
-    error,
-    reload
-  }
+  return { data, isLoading, error, reload: load }
 }
