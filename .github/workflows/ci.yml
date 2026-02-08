@@ -61,20 +61,21 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build with env (with cache)
-        # env:
-        #   MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
-        #   MYSQL_USER: ${{ secrets.MYSQL_USER }}
-        #   MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-        #   MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
-        #   GMAIL_USER: ${{ secrets.GMAIL_USER }}
-        #   GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        #   TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-        #   CHAT_ID: ${{ secrets.CHAT_ID }}
-        #   ALLOWED_SENDER: ${{ secrets.ALLOWED_SENDER }}
-        #   SLEEPTIME: ${{ secrets.SLEEPTIME }}
-        #   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        #   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        #   AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+        env:
+          MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          ALLOWED_SENDER: ${{ secrets.ALLOWED_SENDER }}
+          SLEEPTIME: ${{ secrets.SLEEPTIME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          NEXT_PUBLIC_SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
           docker compose build \
             --build-arg BUILDKIT_INLINE_CACHE=1
