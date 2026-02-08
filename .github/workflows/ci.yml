@@ -234,5 +234,6 @@ jobs:
               -e MYSQL_USER="$MYSQL_USER" \
               -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
               -e MYSQL_DATABASE="$MYSQL_DATABASE" \
+              -e NEXT_PUBLIC_SERVER_HOST="$NEXT_PUBLIC_SERVER_HOST" \
               -p 80:80 \
               longtb11/gmail-viewer:$TAG
