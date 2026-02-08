@@ -5,7 +5,12 @@ import { EmailListItem } from '@/types/gmail'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
-import { format, isToday, isYesterday } from 'date-fns'
+import {
+  format,
+  isToday,
+  isYesterday,
+  differenceInMinutes,
+} from 'date-fns';
 import { motion } from 'framer-motion'
 
 interface EmailListProps {
@@ -40,14 +45,28 @@ export default function EmailList({
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    const now = new Date();
+
+    const diffMinutes = differenceInMinutes(now, date);
+
+    // 🔹 Relative time
+    if (diffMinutes < 1) return 'just now';
+    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+
+    // 🔹 Today
     if (isToday(date)) {
       return format(date, 'h:mm a');
-    } else if (isYesterday(date)) {
-      return 'Yesterday';
-    } else {
-      return format(date, 'MMM d');
     }
+
+    // 🔹 Yesterday
+    if (isYesterday(date)) {
+      return 'Yesterday';
+    }
+
+    // 🔹 Older
+    return format(date, 'MMM d');
   };
+
 
   return (
     <div className="space-y-1">
