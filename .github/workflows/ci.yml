@@ -151,6 +151,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
@@ -169,7 +170,8 @@ jobs:
             SLEEPTIME,
             AWS_ACCESS_KEY_ID,
             AWS_SECRET_ACCESS_KEY,
-            AWS_DEFAULT_REGION
+            AWS_DEFAULT_REGION,
+            SERVER_HOST
           script: |
             docker pull longtb11/mail-to-telegram:$TAG
             docker run -d \
@@ -187,6 +189,7 @@ jobs:
               -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
               -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
               -e AWS_DEFAULT_REGION="$AWS_DEFAULT_REGION" \
+              -e SERVER_HOST="$SERVER_HOST" \
               longtb11/mail-to-telegram:$TAG
 
   deploy_gmail_viewer:
