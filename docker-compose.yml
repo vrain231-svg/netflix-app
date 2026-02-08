@@ -20,6 +20,8 @@ services:
     build:
       context: ./gmail-viewer-app
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_HOST: ${NEXT_PUBLIC_SERVER_HOST:-}
     container_name: netflix-gmail-viewer
     restart: unless-stopped
     ports:
@@ -31,7 +33,6 @@ services:
       - MYSQL_DATABASE=${MYSQL_DATABASE:-}
       - MYSQL_PORT=3306
       - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
-      - NEXT_PUBLIC_SERVER_HOST=${NEXT_PUBLIC_SERVER_HOST:-}
     # depends_on:
     #   mysql:
     #     condition: service_healthy

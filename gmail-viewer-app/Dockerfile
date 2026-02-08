@@ -17,6 +17,9 @@ RUN npm install
 # Copy the rest of the application code
 COPY . .
 
+ARG NEXT_PUBLIC_SERVER_HOST
+ENV NEXT_PUBLIC_SERVER_HOST=$NEXT_PUBLIC_SERVER_HOST
+
 # Build the Next.js app
 RUN npm run build
 
