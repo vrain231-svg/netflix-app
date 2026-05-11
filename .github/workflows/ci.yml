@@ -92,13 +92,11 @@ jobs:
       - name: Cleanup Docker on server
         run: |
           echo "Stopping containers..."
-          docker stop mysql || true
           docker stop gmail-viewer || true
           docker stop mail-to-telegram || true
           docker stop gmail-websocket || true
 
           echo "Removing containers..."
-          docker rm mysql || true
           docker rm gmail-viewer || true
           docker rm mail-to-telegram || true
           docker rm gmail-websocket || true
@@ -129,22 +127,38 @@ jobs:
           DB_PASSWORD="${MYSQL_PASSWORD:-Passw0rd123}"
           ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-Passw0rd123}"
 
-          docker rm -f mysql || true
-          docker run -d \
-            --name mysql \
-            --network netflix-network \
-            -p 3306:3306 \
-            -e MYSQL_ROOT_PASSWORD="$ROOT_PASSWORD" \
-            -e MYSQL_DATABASE="$DB_NAME" \
-            -e MYSQL_USER="$DB_USER" \
-            -e MYSQL_PASSWORD="$DB_PASSWORD" \
-            -v mysql_data:/var/lib/mysql \
-            -v "$GITHUB_WORKSPACE/docker/mysql-init:/docker-entrypoint-initdb.d:ro" \
-            --health-cmd="mysqladmin ping -h localhost -u$DB_USER -p$DB_PASSWORD" \
-            --health-interval=10s \
-            --health-timeout=5s \
-            --health-retries=10 \
-            mysql:8.0
+          create_mysql_container() {
+            docker run -d \
+              --name mysql \
+              --network netflix-network \
+              -p 3306:3306 \
+              -e MYSQL_ROOT_PASSWORD="$ROOT_PASSWORD" \
+              -e MYSQL_DATABASE="$DB_NAME" \
+              -e MYSQL_USER="$DB_USER" \
+              -e MYSQL_PASSWORD="$DB_PASSWORD" \
+              -v mysql_data:/var/lib/mysql \
+              --health-cmd="mysqladmin ping -h localhost -u$DB_USER -p$DB_PASSWORD" \
+              --health-interval=10s \
+              --health-timeout=5s \
+              --health-retries=10 \
+              mysql:8.0
+          }
+
+          if docker ps -a --format '{{.Names}}' | grep -qx 'mysql'; then
+            echo "MySQL container already exists. Reusing it."
+            port_bindings=$(docker inspect -f '{{json .HostConfig.PortBindings}}' mysql)
+            if echo "$port_bindings" | grep -q '"3306/tcp"' && echo "$port_bindings" | grep -q '"HostPort":"3306"'; then
+              docker start mysql || true
+              docker network connect netflix-network mysql || true
+            else
+              echo "MySQL exists but is not bound to host port 3306. Recreating container..."
+              docker rm -f mysql || true
+              create_mysql_container
+            fi
+          else
+            echo "Creating MySQL container for first time..."
+            create_mysql_container
+          fi
 
           echo "Waiting for MySQL to be healthy..."
           for i in {1..30}; do
@@ -161,11 +175,29 @@ jobs:
             sleep 5
           done
 
-          echo "Applying SQL files (idempotent)"
+          docker exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS \`$DB_NAME\`;"
+          docker exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" -D "$DB_NAME" -e "
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              id BIGINT AUTO_INCREMENT PRIMARY KEY,
+              filename VARCHAR(255) NOT NULL UNIQUE,
+              applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+          "
+
+          echo "Applying only new SQL migrations"
           for sql in "$GITHUB_WORKSPACE"/docker/mysql-init/*.sql; do
             [ -f "$sql" ] || continue
-            echo "Applying $sql"
+            filename="$(basename "$sql")"
+            is_applied=$(docker exec mysql mysql -N -s -u"$DB_USER" -p"$DB_PASSWORD" -D "$DB_NAME" -e "SELECT 1 FROM schema_migrations WHERE filename='$filename' LIMIT 1;")
+
+            if [ "$is_applied" = "1" ]; then
+              echo "Skipping already applied migration: $filename"
+              continue
+            fi
+
+            echo "Applying migration: $filename"
             docker exec -i mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" < "$sql"
+            docker exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" -D "$DB_NAME" -e "INSERT INTO schema_migrations (filename) VALUES ('$filename');"
           done
 
   deploy_websocket:
