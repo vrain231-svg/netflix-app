@@ -1,5 +1,28 @@
 version: '3.8'
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: netflix-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-Passw0rd123}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
+      - MYSQL_USER=${MYSQL_USER:-admin}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - netflix-network
+
   websocket:
     image: longtb11/gmail-websocket
     build:
@@ -27,15 +50,15 @@ services:
     ports:
       - "80:80"
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-}
-      - MYSQL_USER=${MYSQL_USER:-}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-}
-      - MYSQL_PORT=3306
+      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_USER=${MYSQL_USER:-admin}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
       - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
-    # depends_on:
-    #   mysql:
-    #     condition: service_healthy
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - netflix-network
     volumes:
@@ -52,11 +75,11 @@ services:
     container_name: netflix-mail-telegram
     restart: unless-stopped
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-}
-      - MYSQL_USER=${MYSQL_USER:-}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-}
-      - MYSQL_PORT=3306
+      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_USER=${MYSQL_USER:-admin}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
       - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
       # Add your Telegram and other environment variables here
       - GMAIL_USER=${GMAIL_USER:-}
@@ -69,9 +92,9 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
       - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-}
       - SERVER_HOST=${SERVER_HOST:-}
-    # depends_on:
-    #   mysql:
-    #     condition: service_healthy
+    depends_on:
+      mysql:
+        condition: service_healthy
     networks:
       - netflix-network
     volumes:
@@ -82,8 +105,8 @@ services:
     mem_limit: 256m
     cpus: 0.5
 
-# volumes:
-#   mysql_data:
+volumes:
+  mysql_data:
 
 networks:
   netflix-network:

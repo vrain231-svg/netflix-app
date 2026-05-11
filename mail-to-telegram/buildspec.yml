@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+  build:
+    commands:
+      - echo "Applying migration SQL files"
+      - |
+        set -e
+        for sql in docker/mysql-init/*.sql; do
+          [ -f "$sql" ] || continue
+          echo "Applying $sql"
+          docker run --rm -i \
+            mysql:8.0 \
+            mysql \
+            -h"$MYSQL_HOST" \
+            -P"${MYSQL_PORT:-3306}" \
+            -u"$MYSQL_USER" \
+            -p"$MYSQL_PASSWORD" < "$sql"
+        done
+

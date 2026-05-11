@@ -5,6 +5,7 @@ on:
   push:
     branches: [ main ]
     paths:
+      - 'docker-compose.yml'
       - 'gmail-viewer-app/**'
       - 'mail-to-telegram/**'
       - 'docker/**'
@@ -12,6 +13,7 @@ on:
   pull_request:
     branches: [ main ]
     paths:
+      - 'docker-compose.yml'
       - 'gmail-viewer-app/**'
       - 'mail-to-telegram/**'
       - 'docker/**'
@@ -90,17 +92,81 @@ jobs:
       - name: Cleanup Docker on server
         run: |
           echo "Stopping containers..."
+          docker stop mysql || true
           docker stop gmail-viewer || true
           docker stop mail-to-telegram || true
           docker stop gmail-websocket || true
 
           echo "Removing containers..."
+          docker rm mysql || true
           docker rm gmail-viewer || true
           docker rm mail-to-telegram || true
           docker rm gmail-websocket || true
 
           echo "Docker prune..."
-          docker system prune -af --volumes
+          docker system prune -af
+
+  deploy_mysql:
+    needs: clean-up
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy mysql and apply migrations
+        env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        run: |
+          docker network create netflix-network || true
+          docker volume create mysql_data || true
+
+          DB_NAME="${MYSQL_DATABASE:-netflix-mail}"
+          DB_USER="${MYSQL_USER:-admin}"
+          DB_PASSWORD="${MYSQL_PASSWORD:-Passw0rd123}"
+          ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-Passw0rd123}"
+
+          docker rm -f mysql || true
+          docker run -d \
+            --name mysql \
+            --network netflix-network \
+            -p 3306:3306 \
+            -e MYSQL_ROOT_PASSWORD="$ROOT_PASSWORD" \
+            -e MYSQL_DATABASE="$DB_NAME" \
+            -e MYSQL_USER="$DB_USER" \
+            -e MYSQL_PASSWORD="$DB_PASSWORD" \
+            -v mysql_data:/var/lib/mysql \
+            -v "$GITHUB_WORKSPACE/docker/mysql-init:/docker-entrypoint-initdb.d:ro" \
+            --health-cmd="mysqladmin ping -h localhost -u$DB_USER -p$DB_PASSWORD" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=10 \
+            mysql:8.0
+
+          echo "Waiting for MySQL to be healthy..."
+          for i in {1..30}; do
+            status=$(docker inspect --format='{{.State.Health.Status}}' mysql || echo "starting")
+            if [ "$status" = "healthy" ]; then
+              echo "MySQL is healthy"
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              echo "MySQL did not become healthy in time"
+              docker logs mysql
+              exit 1
+            fi
+            sleep 5
+          done
+
+          echo "Applying SQL files (idempotent)"
+          for sql in "$GITHUB_WORKSPACE"/docker/mysql-init/*.sql; do
+            [ -f "$sql" ] || continue
+            echo "Applying $sql"
+            docker exec -i mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" < "$sql"
+          done
 
   deploy_websocket:
     needs: clean-up
@@ -111,14 +177,16 @@ jobs:
         env:
           TAG: ${{ github.sha }}
         run: |
+          docker network create netflix-network || true
           docker pull longtb11/gmail-websocket:$TAG
           docker run -d \
             --name gmail-websocket \
+            --network netflix-network \
             -p 3001:3001 \
             longtb11/gmail-websocket:$TAG
 
   deploy_mail_to_telegram:
-    needs: clean-up
+    needs: deploy_mysql
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
@@ -140,10 +208,13 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
+          docker network create netflix-network || true
           docker pull longtb11/mail-to-telegram:$TAG
           docker run -d \
             --name mail-to-telegram \
+            --network netflix-network \
             -e MYSQL_HOST="$MYSQL_HOST" \
+            -e MYSQL_PORT="$MYSQL_PORT" \
             -e MYSQL_USER="$MYSQL_USER" \
             -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
             -e MYSQL_DATABASE="$MYSQL_DATABASE" \
@@ -160,7 +231,7 @@ jobs:
             longtb11/mail-to-telegram:$TAG
 
   deploy_gmail_viewer:
-    needs: clean-up
+    needs: deploy_mysql
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
@@ -173,10 +244,13 @@ jobs:
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
           NEXT_PUBLIC_SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
+          docker network create netflix-network || true
           docker pull longtb11/gmail-viewer:$TAG
           docker run -d \
             --name gmail-viewer \
+            --network netflix-network \
             -e MYSQL_HOST="$MYSQL_HOST" \
+            -e MYSQL_PORT="$MYSQL_PORT" \
             -e MYSQL_USER="$MYSQL_USER" \
             -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
             -e MYSQL_DATABASE="$MYSQL_DATABASE" \

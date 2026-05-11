@@ -1,4 +1,5 @@
-USE netflix-mail;
+CREATE DATABASE IF NOT EXISTS `netflix-mail`;
+USE `netflix-mail`;
 
 CREATE TABLE IF NOT EXISTS emails (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -10,4 +11,4 @@ CREATE TABLE IF NOT EXISTS emails (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_email_id (email_id),
     INDEX idx_created_at (created_at)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
