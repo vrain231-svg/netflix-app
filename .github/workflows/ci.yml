@@ -214,7 +214,7 @@ jobs:
             --name mail-to-telegram \
             --network netflix-network \
             -e MYSQL_HOST="$MYSQL_HOST" \
-            -e MYSQL_PORT="$MYSQL_PORT" \
+            -e MYSQL_PORT="3306" \
             -e MYSQL_USER="$MYSQL_USER" \
             -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
             -e MYSQL_DATABASE="$MYSQL_DATABASE" \
@@ -250,7 +250,7 @@ jobs:
             --name gmail-viewer \
             --network netflix-network \
             -e MYSQL_HOST="$MYSQL_HOST" \
-            -e MYSQL_PORT="$MYSQL_PORT" \
+            -e MYSQL_PORT="3306" \
             -e MYSQL_USER="$MYSQL_USER" \
             -e MYSQL_PASSWORD="$MYSQL_PASSWORD" \
             -e MYSQL_DATABASE="$MYSQL_DATABASE" \
