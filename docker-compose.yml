@@ -50,7 +50,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
       - MYSQL_USER=${MYSQL_USER:-admin}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
@@ -75,7 +75,7 @@ services:
     container_name: netflix-mail-telegram
     restart: unless-stopped
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-localhost}
+      - MYSQL_HOST=${MYSQL_HOST:-mysql}
       - MYSQL_USER=${MYSQL_USER:-admin}
       - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
       - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}

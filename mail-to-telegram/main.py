@@ -161,7 +161,7 @@ def send_to_telegram(subject, body):
     
 def send_ws_message():
     try:
-        ws = create_connection(f"ws://{host}:3001")
+        ws = create_connection(f"wss://{host}:3001")
 
         event = {
             "type": "DATA_UPDATED",
@@ -179,7 +179,10 @@ def monitor_emails():
             while True:
                 mail = connect_imap()
                 criteria = build_search_criteria()
+                logger.info(f"Searching emails at {datetime.now().isoformat()} with criteria: {criteria}")
                 _, email_ids = mail.search(None, criteria)
+                found_count = len(email_ids[0].split()) if email_ids and email_ids[0] else 0
+                logger.info(f"Search completed at {datetime.now().isoformat()}; found {found_count} email(s)")
 
                 for email_id in email_ids[0].split():
                     logger.info(f"Processing email_id: {email_id}")
