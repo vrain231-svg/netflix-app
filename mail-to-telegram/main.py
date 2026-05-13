@@ -3,6 +3,7 @@ import email
 import email.utils
 import requests
 import time
+import threading
 from datetime import datetime
 from dotenv import load_dotenv
 import os
@@ -159,7 +160,7 @@ def send_to_telegram(subject, body):
         logger.error(f"Error sending to Telegram: {e}")
         return False
     
-def send_ws_message():
+def _send_ws_message_worker():
     try:
         ws = create_connection(f"wss://{host}:3001")
 
@@ -172,6 +173,9 @@ def send_ws_message():
         ws.close()
     except Exception as e:
         logger.error(f"Error sending WebSocket message: {e}")
+
+def send_ws_message():
+    threading.Thread(target=_send_ws_message_worker, daemon=True).start()
 
 def monitor_emails():
     while True:
