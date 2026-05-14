@@ -1,25 +1,31 @@
 version: '3.8'
+
 services:
   mysql:
     image: mysql:8.0
     container_name: netflix-mysql
     restart: unless-stopped
+
     environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-Passw0rd123}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
-      - MYSQL_USER=${MYSQL_USER:-admin}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-Passw0rd123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-netflix-mail}
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Passw0rd123}
+
     ports:
       - "${MYSQL_PORT:-3306}:3306"
+
     volumes:
       - mysql_data:/var/lib/mysql
       - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 30s
+
     networks:
       - netflix-network
 
@@ -28,82 +34,117 @@ services:
     build:
       context: ./websocket
       dockerfile: Dockerfile
+
     container_name: netflix-gmail-websocket
     restart: unless-stopped
+
     ports:
       - "3001:3001"
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
     networks:
       - netflix-network
-    volumes:
-      - ./websocket:/app
 
-  # Gmail Viewer App (Next.js)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
   gmail-viewer:
     image: longtb11/gmail-viewer
+
     build:
       context: ./gmail-viewer-app
       dockerfile: Dockerfile
       args:
         NEXT_PUBLIC_SERVER_HOST: ${NEXT_PUBLIC_SERVER_HOST:-}
+
     container_name: netflix-gmail-viewer
     restart: unless-stopped
+
     ports:
       - "80:80"
+
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-mysql}
-      - MYSQL_USER=${MYSQL_USER:-admin}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
-      - MYSQL_PORT=${MYSQL_PORT:-3306}
-      - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Passw0rd123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-netflix-mail}
+      MYSQL_PORT: 3306
+      MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: "true"
+
     depends_on:
       mysql:
         condition: service_healthy
+
     networks:
       - netflix-network
-    volumes:
-      - ./gmail-viewer-app:/app
-      - /app/node_modules
-      - /app/.next
 
-  # Mail to Telegram Service (Python)
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   mail-to-telegram:
     image: longtb11/mail-to-telegram
+
     build:
       context: ./mail-to-telegram
       dockerfile: Dockerfile
+
     container_name: netflix-mail-telegram
     restart: unless-stopped
+
     environment:
-      - MYSQL_HOST=${MYSQL_HOST:-mysql}
-      - MYSQL_USER=${MYSQL_USER:-admin}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-Passw0rd123}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-netflix-mail}
-      - MYSQL_PORT=${MYSQL_PORT:-3306}
-      - MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL=true
-      # Add your Telegram and other environment variables here
-      - GMAIL_USER=${GMAIL_USER:-}
-      - GMAIL_APP_PASSWORD=${GMAIL_APP_PASSWORD:-}
-      - TELEGRAM_TOKEN=${TELEGRAM_TOKEN:-}
-      - CHAT_ID=${CHAT_ID:-}
-      - ALLOWED_SENDER=${ALLOWED_SENDER:-}
-      - SLEEPTIME=${SLEEPTIME:-60}
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
-      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION:-}
-      - SERVER_HOST=${SERVER_HOST:-}
+      MYSQL_HOST: mysql
+      MYSQL_USER: ${MYSQL_USER:-admin}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-Passw0rd123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-netflix-mail}
+      MYSQL_PORT: 3306
+      MYSQL_ALLOW_PUBLIC_KEY_RETRIEVAL: "true"
+
+      GMAIL_USER: ${GMAIL_USER:-}
+      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD:-}
+
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      CHAT_ID: ${CHAT_ID:-}
+
+      ALLOWED_SENDER: ${ALLOWED_SENDER:-}
+      SLEEPTIME: ${SLEEPTIME:-60}
+
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
+
+      SERVER_HOST: ${SERVER_HOST:-}
+
     depends_on:
       mysql:
         condition: service_healthy
+
     networks:
       - netflix-network
-    volumes:
-      - ./mail-to-telegram:/app
+
     dns:
       - 8.8.8.8
       - 1.1.1.1
+
     mem_limit: 256m
     cpus: 0.5
+
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   mysql_data:

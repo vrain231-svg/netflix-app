@@ -9,3 +9,17 @@ if __name__ == '__main__':
     for email_id in email_ids[0].split():
         mark_email_as_unread(mail, email_id)
     mail.logout()
+
+def mark_email_as_unread(mail, email_id):
+    try:
+        email_id_str = email_id.decode() if isinstance(email_id, bytes) else str(email_id)
+        status, _ = mail.store(email_id_str, '-FLAGS', '\\Seen')
+        if status == 'OK':
+            logger.info(f"Marked email_id {email_id_str} as unread")
+            return True
+
+        logger.error(f"Failed to mark email_id {email_id_str} as unread. IMAP status: {status}")
+        return False
+    except Exception as e:
+        logger.error(f"Error marking email_id {email_id} as unread: {e}")
+        return False

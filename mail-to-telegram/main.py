@@ -11,6 +11,7 @@ import re
 from email.header import decode_header
 import unicodedata
 import ast
+from pathlib import Path
 from log_util import get_logger
 from email_type import EmailType
 from ttl_int_array import TTLIntArray
@@ -29,6 +30,15 @@ allowed_sender = ast.literal_eval(os.getenv("ALLOWED_SENDER", "[]"))
 tele_url = f'https://api.telegram.org/bot{tele_token}/sendMessage'
 logger = get_logger()
 host = os.getenv("SERVER_HOST", "localhost")
+heartbeat_file = os.getenv("HEARTBEAT_FILE", "/tmp/mail-to-telegram.heartbeat")
+
+def update_heartbeat():
+    try:
+        Path(heartbeat_file).parent.mkdir(parents=True, exist_ok=True)
+        with open(heartbeat_file, "w", encoding="utf-8") as f:
+            f.write(str(int(time.time())))
+    except Exception as e:
+        logger.error(f"Unable to update heartbeat: {e}")
 
 def build_search_criteria():
     today = datetime.today().strftime("%d-%b-%Y")
@@ -178,15 +188,13 @@ def send_ws_message():
     threading.Thread(target=_send_ws_message_worker, daemon=True).start()
 
 def monitor_emails():
+    update_heartbeat()
     while True:
         try:
             while True:
                 mail = connect_imap()
                 criteria = build_search_criteria()
-                logger.info(f"Searching emails at {datetime.now().isoformat()} with criteria: {criteria}")
                 _, email_ids = mail.search(None, criteria)
-                found_count = len(email_ids[0].split()) if email_ids and email_ids[0] else 0
-                logger.info(f"Search completed at {datetime.now().isoformat()}; found {found_count} email(s)")
 
                 for email_id in email_ids[0].split():
                     logger.info(f"Processing email_id: {email_id}")
@@ -198,15 +206,18 @@ def monitor_emails():
                             save_email_to_db(email_data)
                             send_ws_message()
                 
+                update_heartbeat()
                 time.sleep(sleep_time)        
         except Exception as e:
             logger.error(f"Error: {e}")
+            update_heartbeat()
             time.sleep(sleep_time*5)  
         finally:
             try:
                 mail.logout()
             except:
                 pass
+            update_heartbeat()
             time.sleep(sleep_time)  
 
 if __name__ == '__main__':
