@@ -1,6 +1,10 @@
 
 name: CI & CD Pipeline 
 
+defaults:
+  run:
+    shell: bash
+
 on:
   push:
     branches: [ main ]
@@ -106,6 +110,7 @@ jobs:
 
   deploy_mysql:
     needs: clean-up
+    
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
