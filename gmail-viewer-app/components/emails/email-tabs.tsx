@@ -28,7 +28,7 @@ export default function EmailTabs() {
       if (!res.ok) throw new Error("Failed to fetch emails")
       return res.json()
     },
-    wsUrl: `wss://${host}:3001`,
+    wsUrl: `ws://${host}:3001`,
     shouldReload: (msg) => msg?.type === "DATA_UPDATED"
   })
 
