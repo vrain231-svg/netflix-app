@@ -92,14 +92,14 @@ jobs:
       - name: Cleanup Docker on server
         run: |
           echo "Stopping containers..."
-          docker stop gmail-viewer || true
-          docker stop mail-to-telegram || true
-          docker stop gmail-websocket || true
+          docker stop gmail-viewer 
+          docker stop mail-to-telegram 
+          docker stop gmail-websocket
 
           echo "Removing containers..."
-          docker rm gmail-viewer || true
-          docker rm mail-to-telegram || true
-          docker rm gmail-websocket || true
+          docker rm gmail-viewer 
+          docker rm mail-to-telegram
+          docker rm gmail-websocket
 
           echo "Docker prune..."
           docker system prune -af
@@ -119,8 +119,8 @@ jobs:
           MYSQL_USER: ${{ secrets.MYSQL_USER }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
         run: |
-          docker network create netflix-network || true
-          docker volume create mysql_data || true
+          docker network create netflix-network 
+          docker volume create mysql_data
 
           DB_NAME="${MYSQL_DATABASE:-netflix-mail}"
           DB_USER="${MYSQL_USER:-admin}"
@@ -148,11 +148,11 @@ jobs:
             echo "MySQL container already exists. Reusing it."
             port_bindings=$(docker inspect -f '{{json .HostConfig.PortBindings}}' mysql)
             if echo "$port_bindings" | grep -q '"3306/tcp"' && echo "$port_bindings" | grep -q '"HostPort":"3306"'; then
-              docker start mysql || true
-              docker network connect netflix-network mysql || true
+              docker start mysql 
+              docker network connect netflix-network mysql 
             else
               echo "MySQL exists but is not bound to host port 3306. Recreating container..."
-              docker rm -f mysql || true
+              docker rm -f mysql 
               create_mysql_container
             fi
           else
@@ -209,7 +209,7 @@ jobs:
         env:
           TAG: ${{ github.sha }}
         run: |
-          docker network create netflix-network || true
+          docker network create netflix-network 
           docker pull longtb11/gmail-websocket:$TAG
           docker run -d \
             --name gmail-websocket \
@@ -240,7 +240,7 @@ jobs:
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
-          docker network create netflix-network || true
+          docker network create netflix-network 
           docker pull longtb11/mail-to-telegram:$TAG
           docker run -d \
             --name mail-to-telegram \
@@ -276,7 +276,7 @@ jobs:
           MYSQL_DATABASE: ${{ secrets.MYSQL_DATABASE }}
           NEXT_PUBLIC_SERVER_HOST: ${{ secrets.SERVER_HOST }}
         run: |
-          docker network create netflix-network || true
+          docker network create netflix-network 
           docker pull longtb11/gmail-viewer:$TAG
           docker run -d \
             --name gmail-viewer \
